@@ -14,6 +14,18 @@ app.get('/', function (req, res) {
     })
 })
 
+app.get('/cohorts/:slug', function (req, res) {
+  getOneCohort(req.params.slug)
+    .then(function (cohorts) {
+      if (cohorts.length === 1) {
+        res.send('<pre>' + JSON.stringify(cohorts[0]) + '</pre>')
+      } else {
+        res.status(404).send('cohort not found :(')
+      }
+    })
+
+})
+
 app.listen(port, function () {
   console.log('Listening on port ' + port + ' 👍')
 })
@@ -46,6 +58,10 @@ const getAllCohortsQuery = `
 
 function getAllCohorts () {
   return db.raw(getAllCohortsQuery)
+}
+
+function getOneCohort (slug) {
+  return db.raw("SELECT * FROM Cohorts WHERE slug = ?", [slug])
 }
 
 // Using the knex.js query builder syntax:
