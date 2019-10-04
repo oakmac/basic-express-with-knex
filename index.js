@@ -1,3 +1,6 @@
+const fs = require('fs')
+const mustache = require('mustache')
+
 const express = require('express')
 const app = express()
 
@@ -9,22 +12,22 @@ const port = 3000
 // -----------------------------------------------------------------------------
 // Express.js Endpoints
 
+const homepageTemplate = fs.readFileSync('./templates/homepage.mustache', 'utf8')
+
 app.get('/', function (req, res) {
   getAllCohorts()
     .then(function (allCohorts) {
-      // res.send('<pre>' + prettyPrintJSON(allCohorts) + '</pre>')
-      res.send('<ul>' + allCohorts.map(renderCohort).join('') + '</ul>')
+      res.send(mustache.render(homepageTemplate, {cohortsListHTML: renderAllCohorts(allCohorts)}))
     })
 })
 
 app.get('/cohorts/:slug', function (req, res) {
   getOneCohort(req.params.slug)
-    .then(function (cohorts) {
-      if (cohorts.length === 1) {
-        res.send('<pre>' + prettyPrintJSON(cohorts[0]) + '</pre>')
-      } else {
-        res.status(404).send('cohort not found :(')
-      }
+    .then(function (cohort) {
+      res.send('<pre>' + prettyPrintJSON(cohort) + '</pre>')
+    })
+    .catch(function (err) {
+      res.status(404).send('cohort not found :(')
     })
 })
 
@@ -33,10 +36,14 @@ app.listen(port, function () {
 })
 
 // -----------------------------------------------------------------------------
-// Rendering
+// HTML Rendering
 
 function renderCohort (cohort) {
   return `<li><a href="/cohorts/${cohort.slug}">${cohort.title}</a></li>`
+}
+
+function renderAllCohorts (allCohorts) {
+  return '<ul>' + allCohorts.map(renderCohort).join('') + '</ul>'
 }
 
 // -----------------------------------------------------------------------------
@@ -53,6 +60,13 @@ function getAllCohorts () {
 
 function getOneCohort (slug) {
   return db.raw('SELECT * FROM Cohorts WHERE slug = ?', [slug])
+         .then(function (results) {
+           if (results.length !== 1) {
+             throw null
+           } else {
+             return results[0]
+           }
+         })
 }
 
 // -----------------------------------------------------------------------------
