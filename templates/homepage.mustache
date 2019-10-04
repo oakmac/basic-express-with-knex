@@ -12,6 +12,16 @@
 <body>
   <h1>Headmaster Homepage!</h1>
   <main>{{{cohortsListHTML}}}</main>
+
+  <form action="/cohorts" method="post">
+    <label>Cohort title:</label>
+    <input type="text" name="title" />
+
+    <label>Slug:</label>
+    <input type="text" name="slug" />
+
+    <button type="submit">Add Cohort</button>
+  </form>
 </body>
 
 </html>
