@@ -4,8 +4,8 @@ const mustache = require('mustache')
 const express = require('express')
 const app = express()
 
-const dbConfigs = require('./knexfile.js')
-const db = require('knex')(dbConfigs.development)
+const log = require('./src/logging.js')
+const {createCohort, getAllCohorts, getOneCohort} = require('./src/db/cohorts.js')
 
 const port = 3000
 
@@ -23,8 +23,27 @@ app.get('/', function (req, res) {
     })
 })
 
+function slugify (str) {
+  return str.toLowerCase()
+            .replace(/\s+/g, '-')
+}
+
+console.assert('abc-xyz' === slugify('Abc Xyz'))
+console.assert('aaa-bbb' === slugify('AAA      BBB'))
+
 app.post('/cohorts', function (req, res) {
-  createCohort(req.body)
+  const cohortTitle = req.body.title
+  let slug = req.body.slug
+  if (slug === '') {
+    slug = slugify(cohortTitle)
+  }
+
+  const newCohort = {
+    title: cohortTitle,
+    slug: slug
+  }
+
+  createCohort(newCohort)
     .then(function () {
       res.send('hopefully we created your cohort <a href="/">go home</a>')
     })
@@ -44,7 +63,7 @@ app.get('/cohorts/:slug', function (req, res) {
 })
 
 app.listen(port, function () {
-  console.log('Listening on port ' + port + ' 👍')
+  log.info('Listening on port ' + port + ' 👍')
 })
 
 // -----------------------------------------------------------------------------
@@ -56,33 +75,6 @@ function renderCohort (cohort) {
 
 function renderAllCohorts (allCohorts) {
   return '<ul>' + allCohorts.map(renderCohort).join('') + '</ul>'
-}
-
-// -----------------------------------------------------------------------------
-// Database Queries
-
-const getAllCohortsQuery = `
-  SELECT *
-  FROM Cohorts
-`
-
-function getAllCohorts () {
-  return db.raw(getAllCohortsQuery)
-}
-
-function getOneCohort (slug) {
-  return db.raw('SELECT * FROM Cohorts WHERE slug = ?', [slug])
-    .then(function (results) {
-      if (results.length !== 1) {
-        throw null
-      } else {
-        return results[0]
-      }
-    })
-}
-
-function createCohort (cohort) {
-  return db.raw('INSERT INTO Cohorts (title, slug, isActive) VALUES (?, ?, true)', [cohort.title, cohort.slug])
 }
 
 // -----------------------------------------------------------------------------
